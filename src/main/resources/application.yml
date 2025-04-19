@@ -1,0 +1,30 @@
+spring:
+  datasource:
+    url: jdbc:oracle:thin:@localhost:1521/XEPDB1
+    username: Resume_Validation_DB
+    password: my_password
+    driver-class-name: oracle.jdbc.OracleDriver
+  hikari:
+    connection-timeout: 30000
+    maximum-pool-size: 5
+  jpa:
+    database-platform: org.hibernate.dialect.OracleDialect
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+    path: /
+
+server:
+  port: 8700
+  servlet:
+    context-path: /resume
+
+logging:
+  level:
+    com.zaxxer.hikari: ERROR  # 🔹 Fixed indentation
