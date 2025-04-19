@@ -25,17 +25,82 @@ import opennlp.tools.util.Span;
 @Service
 public class ResumeServiceImpl implements ResumeService {
 
-	private static final String NER_MODEL_PATH = "models/en-ner-technology.bin";
+    private static final String NER_MODEL_PATH = "models/en-ner-technology.bin";
+    
+    // Java-specific skills list for training
+    private static final List<String> JAVA_SKILLS = Arrays.asList(
+        "Java", "Spring", "Spring Boot", "Hibernate", "JPA", "Maven", "Gradle", "JUnit", 
+        "Mockito", "TestNG", "Selenium", "REST API", "SOAP", "JSP", "Servlets", "JDBC", 
+        "Multithreading", "Concurrency", "Collections", "Streams", "Lambda Expressions", 
+        "Generics", "Design Patterns", "Microservices", "Docker", "Kubernetes", "Git", 
+        "CI/CD", "Jenkins", "Log4j", "SLF4J", "RabbitMQ", "Kafka", "IBM MQ", "JSON", 
+        "XML", "IntelliJ IDEA", "Eclipse", "PostgreSQL", "MySQL", "Oracle SQL", "Redis", 
+        "Linux", "Swagger", "OpenAPI", "OAuth2", "JWT", "Apache Tomcat", "JUnit 5", "JAXB", 
+        "Jackson", "Quartz Scheduler", "Lombok", "SonarQube", "Flyway", "Liquibase", "Prometheus", 
+        "Grafana", "ELK Stack", "JIRA"
+    );
+ // JavaScript-specific skills list for training
+    private static final List<String> JS_SKILLS = Arrays.asList(
+        "JavaScript", "TypeScript", "Node.js", "Express", "React", "Redux", "Next.js", 
+        "Angular", "Vue.js", "Nuxt.js", "Svelte", "HTML", "CSS", "SCSS", "Tailwind CSS", 
+        "Bootstrap", "jQuery", "AJAX", "JSON", "Webpack", "Babel", "ESLint", "Prettier", 
+        "NPM", "Yarn", "Jest", "Mocha", "Chai", "Jasmine", "Cypress", "Playwright", 
+        "Puppeteer", "GraphQL", "REST API", "WebSockets", "OAuth2", "JWT", "MongoDB", 
+        "PostgreSQL", "Firebase", "Supabase", "Git", "Docker", "CI/CD", "Jenkins", 
+        "GitLab CI", "VS Code", "Chrome DevTools"
+    );
+ // Data Engineering-specific skills list
+    private static final List<String> DATA_ENGINEERING_SKILLS2 = Arrays.asList(
+        "Informatica Cloud (IICS)",
+        "SQL",
+        "Power BI",
+        "Apache Kafka",
+        "Kafka Lenses",
+        "Autosys",
+        "Unix",
+        "Python",
+        "Salesforce",
+        "Azure DevOps (CI/CD Pipeline)",
+        "APIM (Azure API Management)",
+        "Postman",
+        "Apache Spark",
+        "Hadoop",
+        "Apache Hive",
+        "MySQL"
+    );
+
+    
+    private static final List<String> DATA_ENGINEERING_SKILLS = Arrays.asList(
+    	    "Data Engineering", "Apache Hadoop", "Apache Spark", "Apache Kafka", "Apache Flink", "Apache Beam", 
+    	    "AWS Redshift", "Google BigQuery", "Snowflake", "Databricks", "Apache Hive", "Presto", "Apache Airflow", 
+    	    "Airflow DAGs", "ETL Pipelines", "ELT Pipelines", "SQL", "Python", "Java", "Scala", "SQLAlchemy", "Pandas", 
+    	    "Dask", "Jupyter Notebooks", "Data Lakes", "Data Warehouses", "Data Modeling", "Dimensional Modeling", 
+    	    "Snowflake Schema", "Star Schema", "Delta Lake", "Apache Parquet", "Apache Avro", "ORC Format", 
+    	    "NoSQL Databases", "MongoDB", "Cassandra", "HBase", "Redis", "Elasticsearch", "AWS S3", "Google Cloud Storage", 
+    	    "Azure Blob Storage", "AWS Lambda", "Google Cloud Functions", "Kafka Streams", "Apache Pulsar", "Kubernetes", 
+    	    "Docker", "CI/CD", "Git", "Terraform", "Jenkins", "GitLab CI", "DevOps", "Hadoop Distributed File System (HDFS)", 
+    	    "Apache ZooKeeper", "Apache Oozie", "AWS Glue", "Google Cloud Dataproc", "Azure Data Factory", "AWS Kinesis", 
+    	    "Google Cloud Pub/Sub", "Apache Sqoop", "Talend", "Informatica", "Alteryx", "Data Pipeline", "Data Quality", 
+    	    "Data Governance", "Data Integration", "Python for Data Engineering", "Spark SQL", "Pandas DataFrames", 
+    	    "Dask DataFrames", "PySpark", "Spark Streaming", "Data Transformation", "Data Extraction", "Data Cleansing", 
+    	    "Data Enrichment", "Real-Time Data Processing", "Batch Processing", "Data Aggregation", "Cloud Data Engineering", 
+    	    "Streaming Data", "Data Orchestration", "Big Data", "Data Pipelines", "Workflow Automation", "Cloud Data Warehousing", 
+    	    "Data Shuffling", "SQL Joins", "Data Compression", "Columnar Storage", "Parallel Processing", "Cluster Computing", 
+    	    "ETL Tools", "Cloud Databases", "Data Security", "Masking Data", "Encryption", "Anomaly Detection", 
+    	    "Real-Time Monitoring", "Data Backup", "Data Recovery", "Data Auditing", "Disaster Recovery", "Query Optimization"
+    	);
+
+
 
     @Override
     public ResumeResponse processResume(MultipartFile file, String jobDescription) throws IOException {
         String content = extractTextFromPdf(file);
-        //System.out.println(content);
-
+        
         String email = extractEmail(content);
         String phone = extractPhone(content);
-        List<String> skills = extractSkillsWithNER(content); // Replace the method call to use NER-based extraction
-        System.out.println(skills);
+        List<String> skills = extractSkillsWithNER(content); // Using NER-based extraction
+        System.out.println("Extracted Skills: " + skills);
+        
         double matchPercentage = calculateMatchPercentage(jobDescription, skills);
 
         ResumeResponse response = new ResumeResponse();
@@ -57,13 +122,14 @@ public class ResumeServiceImpl implements ResumeService {
 
     private String extractEmail(String text) {
         Matcher matcher = Pattern.compile("[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]+").matcher(text);
-        return matcher.find() ? matcher.group() : "Not found";
+        return matcher.find() ? matcher.group() : "Email Not found";
     }
 
     private String extractPhone(String text) {
         Matcher matcher = Pattern.compile("\\b\\d{10}\\b").matcher(text);
-        return matcher.find() ? matcher.group() : "Not found";
+        return matcher.find() ? matcher.group() : "Phone Number Not found";
     }
+
     private List<String> extractSkillsWithNER(String text) throws IOException {
         List<String> foundSkills = new ArrayList<>();
 
@@ -86,43 +152,45 @@ public class ResumeServiceImpl implements ResumeService {
                 for (int i = span.getStart(); i < span.getEnd(); i++) {
                     skillBuilder.append(tokens[i]).append(" ");
                 }
-                foundSkills.add(skillBuilder.toString().trim());
+                String skill = skillBuilder.toString().trim();
+                System.out.println("skill " +skill);
+////                if (JAVA_SKILLS.contains(skill)) {
+////                    foundSkills.add(skill);
+////                }
+//                 if (JS_SKILLS.contains(skill)) {
+//                    foundSkills.add(skill);
+//                }
+////                else if (DATA_ENGINEERING_SKILLS.contains(skill)) {
+////                    foundSkills.add(skill);
+////                }
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-        return foundSkills.isEmpty() ? extractSkillsFromKeywords(text) : filterSkills(foundSkills);
+        return foundSkills.isEmpty() ? extractSkillsFromKeywords(text) : foundSkills;
     }
 
+    // If NER doesn't find any skills, fall back to keyword-based extraction
+  
+        private List<String> extractSkillsFromKeywords(String text) {
+            String lowerText = text.toLowerCase();
+            List<String> foundSkills = new ArrayList<>();
+            
+            // Search Java, JS, and Data Engineering skills
+            foundSkills.addAll(JAVA_SKILLS.stream()
+                    .filter(skill -> lowerText.contains(skill.toLowerCase()))
+                    .collect(Collectors.toList()));
+            foundSkills.addAll(JS_SKILLS.stream()
+                    .filter(skill -> lowerText.contains(skill.toLowerCase()))
+                    .collect(Collectors.toList()));
 
-    // If NER doesn't find any skills, fall back to basic keyword extraction (optional)
-    private List<String> extractSkillsFromKeywords(String text) {
-        List<String> skillsList = Arrays.asList("Java", "Spring Boot", "MySQL", "AWS", "Hibernate", "Kafka", "MongoDB");
-        String lowerText = text.toLowerCase();
-
-        return skillsList.stream()
-                .filter(skill -> lowerText.contains(skill.toLowerCase()))
-                .collect(Collectors.toList());
+            foundSkills.addAll(DATA_ENGINEERING_SKILLS.stream()
+                    .filter(skill -> lowerText.contains(skill.toLowerCase()))
+                    .collect(Collectors.toList()));
+            
+            return foundSkills;
     }
-    private List<String> filterSkills(List<String> skills) {
-        return skills.stream()
-            .map(String::trim)
-            .filter(skill -> skill.length() > 1)
-            .filter(skill -> VALID_SKILLS.stream()
-                .anyMatch(valid -> valid.equalsIgnoreCase(skill)
-                    || valid.toLowerCase().contains(skill.toLowerCase())
-                    || skill.toLowerCase().contains(valid.toLowerCase())))
-            .distinct()
-            .collect(Collectors.toList());
-    }
-
-    private List<String> extractSkillsFromText(String text) {
-        return VALID_SKILLS.stream()
-            .filter(skill -> text.toLowerCase().contains(skill.toLowerCase()))
-            .collect(Collectors.toList());
-    }
-
 
     private double calculateMatchPercentage(String jobDescription, List<String> resumeSkills) {
         List<String> jdSkills = extractSkillsFromText(jobDescription);
@@ -139,37 +207,27 @@ public class ResumeServiceImpl implements ResumeService {
         return jdSkills.isEmpty() ? 0.0 : ((double) matched / jdSkills.size()) * 100;
     }
 
-    
-    private static final List<String> VALID_SKILLS = Arrays.asList(
-    	    // === Programming Languages ===
-    	    "Java", "Python", "JavaScript", "TypeScript", "C++", "C#", "Go", "Ruby", "PHP", "Scala", "Kotlin", "Swift",
-
-    	    // === Backend Frameworks ===
-    	    "Spring Boot", "Spring MVC", "Hibernate", "Node.js", "Express", "Django", "Flask", "ASP.NET", "Micronaut", "Quarkus",
-
-    	    // === Frontend Frameworks ===
-    	    "React", "Angular", "Vue.js", "Svelte", "Next.js", "jQuery", "Bootstrap", "Tailwind CSS",
-
-    	    // === Databases ===
-    	    "MySQL", "PostgreSQL", "MongoDB", "Oracle", "Redis", "SQLite", "Cassandra", "DynamoDB", "Elasticsearch",
-
-    	    // === DevOps / Tools ===
-    	    "Git", "GitHub", "GitLab", "Bitbucket", "Jenkins", "Docker", "Kubernetes", "Terraform", "Ansible", "CI/CD", "Nginx",
-
-    	    // === Cloud Platforms ===
-    	    "AWS", "Azure", "GCP", "Firebase", "Heroku", "Cloudflare",
-
-    	    // === Testing / QA ===
-    	    "JUnit", "Mockito", "Selenium", "Postman", "Cypress", "TestNG", "JMeter",
-
-    	    // === APIs and Integration ===
-    	    "REST API", "GraphQL", "WebSocket", "SOAP", "OAuth", "gRPC", "RabbitMQ", "Kafka", "ActiveMQ",
-
-    	    // === Other / Miscellaneous ===
-    	    "Linux", "Shell Scripting", "Splunk", "Prometheus", "Grafana", "Logstash", "Kibana", "New Relic", "DataDog",
-
-    	    // === Architecture / Patterns ===
-    	    "Microservices", "Monolith", "Event-driven", "Serverless", "MVC", "DDD", "TDD", "Agile", "Scrum", "Kanban"
-    	);
+    private List<String> extractSkillsFromText(String text) {
+        String lowerText = text.toLowerCase();
+        List<String> foundSkills = new ArrayList<>();
+        
+        // Add Java skills
+        foundSkills.addAll(JAVA_SKILLS.stream()
+                .filter(skill -> lowerText.contains(skill.toLowerCase()))
+                .collect(Collectors.toList()));
+        
+        // Add Java skills
+        foundSkills.addAll(JS_SKILLS.stream()
+                .filter(skill -> lowerText.contains(skill.toLowerCase()))
+                .collect(Collectors.toList()));
+        
+        
+        // Add Data Engineering skills
+        foundSkills.addAll(DATA_ENGINEERING_SKILLS.stream()
+                .filter(skill -> lowerText.contains(skill.toLowerCase()))
+                .collect(Collectors.toList()));
+        
+        return foundSkills;
+    }
 
 }
