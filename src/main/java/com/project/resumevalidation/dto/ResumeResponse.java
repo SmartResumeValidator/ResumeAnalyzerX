@@ -1,6 +1,7 @@
 package com.project.resumevalidation.dto;
 
 import java.util.List;
+import java.util.Set;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -15,8 +16,10 @@ public class ResumeResponse {
     private String name;
     private String email;
     private String phone;
-    private List<String> extractedSkills;
+    private Set<String> extractedSkills;
     private double matchPercentage;
+    private String leetcodeUsername;  // New field
+    private String geeksforgeeksUsername;  // New field
     private String message;
 
 

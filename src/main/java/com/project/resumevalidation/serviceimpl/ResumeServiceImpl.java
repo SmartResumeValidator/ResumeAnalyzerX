@@ -4,7 +4,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -16,6 +18,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.project.resumevalidation.dto.ResumeResponse;
 import com.project.resumevalidation.service.ResumeService;
+import com.project.resumevalidation.utils.CodingProfileExtractor;
 
 import opennlp.tools.namefind.NameFinderME;
 import opennlp.tools.namefind.TokenNameFinderModel;
@@ -91,14 +94,13 @@ public class ResumeServiceImpl implements ResumeService {
     	);
 
 
-
     @Override
     public ResumeResponse processResume(MultipartFile file, String jobDescription) throws IOException {
         String content = extractTextFromPdf(file);
-        
+        System.out.println(content);
         String email = extractEmail(content);
         String phone = extractPhone(content);
-        List<String> skills = extractSkillsWithNER(content); // Using NER-based extraction
+        Set<String> skills = extractSkillsWithNER(content); // Using NER-based extraction
         System.out.println("Extracted Skills: " + skills);
         
         double matchPercentage = calculateMatchPercentage(jobDescription, skills);
@@ -130,14 +132,15 @@ public class ResumeServiceImpl implements ResumeService {
         return matcher.find() ? matcher.group() : "Phone Number Not found";
     }
 
-    private List<String> extractSkillsWithNER(String text) throws IOException {
-        List<String> foundSkills = new ArrayList<>();
+    private Set<String> extractSkillsWithNER(String text) throws IOException {
+        Set<String> foundSkills = new HashSet<>(); // Use Set to avoid duplicates
 
         // Tokenize the resume text
         SimpleTokenizer tokenizer = SimpleTokenizer.INSTANCE;
         String[] tokens = tokenizer.tokenize(text);
 
         try (InputStream modelIn = getClass().getClassLoader().getResourceAsStream(NER_MODEL_PATH)) {
+            System.out.println("Model InputStream: " + modelIn);
             if (modelIn == null) {
                 throw new IOException("Model file not found!");
             }
@@ -153,47 +156,51 @@ public class ResumeServiceImpl implements ResumeService {
                     skillBuilder.append(tokens[i]).append(" ");
                 }
                 String skill = skillBuilder.toString().trim();
-                System.out.println("skill " +skill);
-////                if (JAVA_SKILLS.contains(skill)) {
-////                    foundSkills.add(skill);
-////                }
-//                 if (JS_SKILLS.contains(skill)) {
-//                    foundSkills.add(skill);
-//                }
-////                else if (DATA_ENGINEERING_SKILLS.contains(skill)) {
-////                    foundSkills.add(skill);
-////                }
+                System.out.println("skill " + skill);
+
+                // Check for the skill and add it to the set (duplicates will be ignored)
+                if (JAVA_SKILLS.contains(skill)) {
+                    foundSkills.add(skill);
+                }
+                if (JS_SKILLS.contains(skill)) {
+                    foundSkills.add(skill);
+                }
+                else if (DATA_ENGINEERING_SKILLS.contains(skill)) {
+                    foundSkills.add(skill);
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();
+        }
+        
+        if (foundSkills.isEmpty()) {
+            System.out.println("NER found no skills, using keyword-based fallback");
         }
 
         return foundSkills.isEmpty() ? extractSkillsFromKeywords(text) : foundSkills;
     }
 
     // If NER doesn't find any skills, fall back to keyword-based extraction
-  
-        private List<String> extractSkillsFromKeywords(String text) {
-            String lowerText = text.toLowerCase();
-            List<String> foundSkills = new ArrayList<>();
-            
-            // Search Java, JS, and Data Engineering skills
-            foundSkills.addAll(JAVA_SKILLS.stream()
-                    .filter(skill -> lowerText.contains(skill.toLowerCase()))
-                    .collect(Collectors.toList()));
-            foundSkills.addAll(JS_SKILLS.stream()
-                    .filter(skill -> lowerText.contains(skill.toLowerCase()))
-                    .collect(Collectors.toList()));
-
-            foundSkills.addAll(DATA_ENGINEERING_SKILLS.stream()
-                    .filter(skill -> lowerText.contains(skill.toLowerCase()))
-                    .collect(Collectors.toList()));
-            
-            return foundSkills;
+    private Set<String> extractSkillsFromKeywords(String text) {
+        String lowerText = text.toLowerCase();
+        Set<String> foundSkills = new HashSet<>(); // Use Set to avoid duplicates
+        
+        // Search Java, JS, and Data Engineering skills
+        foundSkills.addAll(JAVA_SKILLS.stream()
+                .filter(skill -> lowerText.contains(skill.toLowerCase()))
+                .collect(Collectors.toSet()));
+        foundSkills.addAll(JS_SKILLS.stream()
+                .filter(skill -> lowerText.contains(skill.toLowerCase()))
+                .collect(Collectors.toSet()));
+        foundSkills.addAll(DATA_ENGINEERING_SKILLS.stream()
+                .filter(skill -> lowerText.contains(skill.toLowerCase()))
+                .collect(Collectors.toSet()));
+        
+        return foundSkills;
     }
 
-    private double calculateMatchPercentage(String jobDescription, List<String> resumeSkills) {
-        List<String> jdSkills = extractSkillsFromText(jobDescription);
+    private double calculateMatchPercentage(String jobDescription, Set<String> resumeSkills) {
+        Set<String> jdSkills = extractSkillsFromText(jobDescription); // Use Set for consistency
 
         long matched = resumeSkills.stream()
             .map(String::toLowerCase)
@@ -207,27 +214,25 @@ public class ResumeServiceImpl implements ResumeService {
         return jdSkills.isEmpty() ? 0.0 : ((double) matched / jdSkills.size()) * 100;
     }
 
-    private List<String> extractSkillsFromText(String text) {
+    private Set<String> extractSkillsFromText(String text) {
         String lowerText = text.toLowerCase();
-        List<String> foundSkills = new ArrayList<>();
+        Set<String> foundSkills = new HashSet<>(); // Use Set to avoid duplicates
         
         // Add Java skills
         foundSkills.addAll(JAVA_SKILLS.stream()
                 .filter(skill -> lowerText.contains(skill.toLowerCase()))
-                .collect(Collectors.toList()));
+                .collect(Collectors.toSet()));
         
-        // Add Java skills
+        // Add JS skills
         foundSkills.addAll(JS_SKILLS.stream()
                 .filter(skill -> lowerText.contains(skill.toLowerCase()))
-                .collect(Collectors.toList()));
-        
+                .collect(Collectors.toSet()));
         
         // Add Data Engineering skills
         foundSkills.addAll(DATA_ENGINEERING_SKILLS.stream()
                 .filter(skill -> lowerText.contains(skill.toLowerCase()))
-                .collect(Collectors.toList()));
+                .collect(Collectors.toSet()));
         
         return foundSkills;
     }
-
 }

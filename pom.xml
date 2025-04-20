@@ -93,6 +93,18 @@
     <version>2.5.4</version>
 </dependency>
 
+    <!-- WebClient for making HTTP requests -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-webflux</artifactId>
+    </dependency>
+
+    <!-- Jsoup for HTML parsing -->
+    <dependency>
+        <groupId>org.jsoup</groupId>
+        <artifactId>jsoup</artifactId>
+        <version>1.15.3</version>
+    </dependency>
 
 	</dependencies>
 

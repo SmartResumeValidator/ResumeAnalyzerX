@@ -17,7 +17,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/", "/public").permitAll()
                 .requestMatchers("/onboard/api/userLogin").permitAll() // ✅ Allow login API
-                .requestMatchers("/api/resume/upload").permitAll()
+                .requestMatchers("/api/resume/**").permitAll()
+                .requestMatchers("/api/**").permitAll()
                 .requestMatchers(
                     "/swagger-ui/**",
                     "/v3/api-docs/**",

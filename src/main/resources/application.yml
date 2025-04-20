@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: ${DB_URL}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    url: jdbc:oracle:thin:@localhost:1521/XEPDB1
+    username: Resume_Validation_DB
+    password: my_password
     driver-class-name: oracle.jdbc.OracleDriver
   hikari:
     connection-timeout: 30000
